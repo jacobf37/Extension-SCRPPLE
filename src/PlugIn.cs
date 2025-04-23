@@ -4,7 +4,7 @@ using Landis.SpatialModeling;
 using Landis.Library.Climate;
 using Landis.Core;
 using Landis.Library.Metadata;
-using Landis.Library.BiomassCohorts;
+using Landis.Library.DensityCohorts;
 using Ether.WeightedSelector;  
 
 using System;
@@ -23,7 +23,7 @@ namespace Landis.Extension.Scrapple
         private static readonly bool isDebugEnabled = true; 
 
         public static readonly ExtensionType ExtType = new ExtensionType("disturbance:fire");
-        public static readonly string ExtensionName = "SCRAPPLE";
+        public static readonly string ExtensionName = "SCRAPPLE-DS";
         public static MetadataTable<EventsLog> eventLog;
         public static MetadataTable<SummaryLog> summaryLog;
         public static MetadataTable<IgnitionsLog> ignitionsLog;
@@ -69,6 +69,7 @@ namespace Landis.Extension.Scrapple
 
         public static IgnitionDistribution IgnitionDist = IgnitionDistribution.Poisson;
 
+        public static Dictionary<int, double> annualAET;
         //---------------------------------------------------------------------
 
         public PlugIn()
@@ -189,7 +190,7 @@ namespace Landis.Extension.Scrapple
                     {
                         if (PlugIn.Parameters.LadderFuelSpeciesList.Contains(cohort.Species) && cohort.Age <= PlugIn.Parameters.LadderFuelMaxAge)
                         {
-                            SiteVars.LadderFuels[site] += cohort.Biomass;
+                            SiteVars.LadderFuels[site] += cohort.Data.Biomass;
                         }
                     }
                 }
@@ -250,6 +251,8 @@ namespace Landis.Extension.Scrapple
             }
 
             AnnualClimate_Daily weatherData = null;
+            AnnualClimate_Monthly weatherMonthlyData = null;
+
             dNBR = new int[3];
             totalBurnedSites = new int[3];
             numberOfFire = new int[3];
@@ -265,6 +268,28 @@ namespace Landis.Extension.Scrapple
             catch
             {
                 throw new UninitializedClimateData(string.Format("Could not initilize the actual year {0} from climate data", ActualYear));
+            }
+
+            annualAET = new Dictionary<int, double>();
+
+            foreach (IEcoregion ecoregion in PlugIn.ModelCore.Ecoregions)
+            {
+                if (ecoregion.Active && sitesPerClimateRegion.ContainsKey(ecoregion.Index))
+                {
+                    try
+                    {
+                        weatherMonthlyData = Climate.Future_MonthlyData[ActualYear][ecoregion.Index];
+                    }
+                    catch
+                    {
+                        throw new UninitializedClimateData(string.Format("Climate data could not be found in Run(). Year: {0} in ecoregion: {1}", ActualYear, ecoregion.Name));
+                    }
+
+                    double annualPET = 0.0;
+                    for (int month = 0; month < 12; month++)
+                        annualPET += weatherMonthlyData.MonthlyPET[month];
+                    annualAET.Add(ecoregion.Index, annualPET);
+                }
             }
 
             // modelCore.UI.WriteLine("   Next, shuffle ignition sites...");
@@ -610,6 +635,7 @@ namespace Landis.Extension.Scrapple
                 }
             }
 
+            /*
             string[] paths6 = { "social-climate-fire", "smolder-consumption-{timestep}.img" };
             path = MapNames.ReplaceTemplateVars(Path.Combine(paths6), currentTime);
             using (IOutputRaster<IntPixel> outputRaster = modelCore.CreateRaster<IntPixel>(path, modelCore.Landscape.Dimensions))
@@ -655,6 +681,8 @@ namespace Landis.Extension.Scrapple
                     outputRaster.WriteBufferPixel();
                 }
             }
+
+            */
 
             string[] paths8 = { "social-climate-fire", "event-ID-{timestep}.img" };
             path = MapNames.ReplaceTemplateVars(Path.Combine(paths8), currentTime);

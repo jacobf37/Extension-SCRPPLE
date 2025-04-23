@@ -1,6 +1,6 @@
 //  Authors:  Robert M. Scheller, Alec Kretchun, Vincent Schuster
 
-using Landis.Library.BiomassCohorts;
+using Landis.Library.DensityCohorts;
 using Landis.SpatialModeling;
 using Landis.Core;
 using Landis.Library.Climate;
@@ -316,17 +316,21 @@ namespace Landis.Extension.Scrapple
             //double Previous_Year_PET = SiteVars.PotentialEvapotranspiration[site];
 
             double Previous_Year_PET = 0.0;
+
+            /*
             if (SiteVars.PotentialEvapotranspiration[site] > 0)
                 Previous_Year_PET = SiteVars.PotentialEvapotranspiration[site];
             else
                 Previous_Year_PET = PlugIn.Parameters.TimeZeroPET;
+            */
 
+            Previous_Year_PET = PlugIn.annualAET[ecoregion.Index];
             //double WaterDeficit = SiteVars.ClimaticWaterDeficit[site];
             double WaterDeficit = 0.0;
-            if (SiteVars.ClimaticWaterDeficit[site] > 0)
-                WaterDeficit = SiteVars.ClimaticWaterDeficit[site];
-            else
-                WaterDeficit = PlugIn.Parameters.TimeZeroCWD;
+            //if (SiteVars.ClimaticWaterDeficit[site] > 0)
+            //    WaterDeficit = SiteVars.ClimaticWaterDeficit[site];
+            //else
+            //    WaterDeficit = PlugIn.Parameters.TimeZeroCWD;
 
             //double TotalFuels = SiteVars.FineFuels[site] + ladderFuelBiomass;
 
@@ -458,16 +462,16 @@ namespace Landis.Extension.Scrapple
             {
                 //PlugIn.ModelCore.UI.WriteLine("damage prob={0}, Random#={1}", ProbablityMortality, random);
                 killCohort = true;
-                this.TotalBiomassMortality += cohort.Biomass;
+                this.TotalBiomassMortality += cohort.Data.Biomass;
 
                 //SF add to site tracker
-                SiteVars.BiomassKilled[this.currentSite] += cohort.Biomass;
+                SiteVars.BiomassKilled[this.currentSite] += cohort.Data.Biomass;
 
                 foreach (IDeadWood deadwood in PlugIn.Parameters.DeadWoodList)
                 {
                     if (cohort.Species == deadwood.Species && cohort.Age >= deadwood.MinAge)
                     {
-                        SiteVars.SpecialDeadWood[this.currentSite] += cohort.Biomass;
+                        SiteVars.SpecialDeadWood[this.currentSite] += cohort.Data.Biomass;
                         //PlugIn.ModelCore.UI.WriteLine("special dead = {0}, site={1}.", SiteVars.SpecialDeadWood[this.Current_damage_site], this.Current_damage_site);
 
                     }
@@ -477,7 +481,7 @@ namespace Landis.Extension.Scrapple
             if (killCohort)
             {
                 this.CohortsKilled++;
-                return cohort.Biomass;
+                return cohort.Data.Biomass;
             }
 
             return 0;
@@ -517,7 +521,7 @@ namespace Landis.Extension.Scrapple
             foreach (ISpeciesCohorts speciesCohorts in SiteVars.Cohorts[site])
                 foreach (ICohort cohort in speciesCohorts)
                     if (PlugIn.Parameters.LadderFuelSpeciesList.Contains(cohort.Species) && cohort.Age <= PlugIn.Parameters.LadderFuelMaxAge)
-                        ladderFuelBiomass += cohort.Biomass;
+                        ladderFuelBiomass += cohort.Data.Biomass;
             // End LADDER FUELS ************************
 
 

@@ -1,9 +1,9 @@
 LandisData   Extension
 
-Name         "SCRAPPLE"
+Name         "SCRAPPLE-DS"
 Version      3.2
 Type         disturbance:fire
-Assembly     Landis.Extension.Scrapple-v3
+Assembly     Landis.Extension.Scrapple-v3-DS
 Class        Landis.Extension.Scrapple.PlugIn
 Description  "Social and climate fire disturbance"
 CoreVersion  7.0
